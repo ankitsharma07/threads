@@ -1,0 +1,14 @@
+{
+  "name": "threads",
+  "version": "0.6.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/run.js",
+    "build": "python3 build.py",
+    "benchmark": "node tests/benchmark.js"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  }
+}

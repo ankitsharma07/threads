@@ -1,0 +1,4 @@
+node_modules/
+__pycache__/
+# Release builds are attached to GitHub releases, not committed.
+dist/

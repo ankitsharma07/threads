@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Threads</title><link rel="stylesheet" href="reader.css"></head>
+<body>
+  <main>
+    <header class="topbar">
+      <div class="heading">
+        <p class="eyebrow"><img src="icon.svg" width="16" height="16" alt=""><span>Threads</span><span id="count"></span></p>
+        <h1 id="subject">Select a conversation</h1>
+        <p id="summary">Select a message or a thread in the message list.</p>
+      </div>
+      <div class="toolbar">
+        <button id="refresh" class="icon-button" type="button" title="Refresh this conversation" aria-label="Refresh this conversation"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg></button>
+        <details class="popover view-options">
+          <summary class="icon-button" title="View options" aria-label="View options"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></summary>
+          <div class="popover-panel" role="group" aria-label="View options">
+            <label class="field" for="theme"><span>Theme</span><select id="theme"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option><option value="grey">What Grey</option><option value="black">Pitch black</option><option value="sepia">Sepia</option><option value="navy">Midnight blue</option><option value="forest">Forest</option><option value="plum">Plum</option></select></label>
+            <label class="field" for="font-family"><span>Font</span><select id="font-family"></select></label>
+            <label class="field" for="font-size"><span>Text size</span><select id="font-size"></select></label>
+            <label class="field" for="line-spacing"><span>Spacing</span><select id="line-spacing"></select></label>
+            <div class="popover-divider" role="separator"></div>
+            <label class="field" for="order"><span>Order</span><select id="order"><option value="chronological">Oldest first</option><option value="reverse">Newest first</option></select></label>
+            <label class="switch"><input id="remote-content" type="checkbox"><span>Allow remote content</span></label>
+            <label class="switch"><input id="fold-long-threads" type="checkbox" checked><span>Fold long threads</span></label>
+            <label class="switch"><input id="inline-attachments" type="checkbox" checked><span>Show image attachments inline</span></label>
+            <button id="settings" type="button" class="link-button">All settings…</button>
+          </div>
+        </details>
+        <button id="original" type="button" class="button">Original message</button>
+      </div>
+      <!-- Overlays the conversation so showing or hiding it never shifts the scrolled content. -->
+      <div id="loading" class="loading-progress" hidden>
+        <div id="loading-bar" class="progress-track" role="progressbar" aria-label="Conversation loading"><span></span></div>
+        <span id="loading-label" role="status" aria-live="polite">Loading conversation…</span>
+      </div>
+    </header>
+    <div id="scroller"><div id="list"><button id="thread-group" class="thread-group" type="button" aria-controls="list" aria-expanded="false" hidden></button></div><div id="empty"><span aria-hidden="true">↳</span><h2>Every reply, in its place.</h2><p>Select a message in the thread list.<br>The conversation appears right here.</p></div></div>
+    <footer><span class="dot" aria-hidden="true"></span><span id="status" role="status">Connecting…</span><details class="popover settings"><summary>Index controls</summary><div class="popover-panel"><button id="pause" type="button" class="button">Pause indexing</button><button id="rescan" type="button" class="button">Rescan mailbox</button></div></details></footer>
+  </main>
+  <div id="address-menu" class="address-menu" role="menu" aria-label="Email address actions" hidden></div>
+  <div id="card-menu" class="address-menu card-menu" role="menu" aria-label="Message actions" hidden></div>
+  <script type="module" src="reader.js"></script>
+</body>
+</html>

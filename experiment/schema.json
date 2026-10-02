@@ -1,0 +1,119 @@
+[
+  {
+    "namespace": "threadsPane",
+    "description": "Mount Threads in the existing Thunderbird message pane.",
+    "types": [
+      {
+        "id": "Selection",
+        "type": "object",
+        "properties": {
+          "selected": {
+            "$ref": "messages.MessageHeader"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "messages.MessageHeader"
+            }
+          }
+        }
+      }
+    ],
+    "functions": [
+      {
+        "name": "start",
+        "type": "function",
+        "async": true,
+        "parameters": []
+      },
+      {
+        "name": "getSelection",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "choices": [
+            {
+              "$ref": "Selection"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      {
+        "name": "showOriginal",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          }
+        ]
+      },
+      {
+        "name": "show",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          }
+        ],
+        "returns": {
+          "type": "boolean"
+        }
+      },
+      {
+        "name": "createFilter",
+        "type": "function",
+        "async": true,
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          },
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "header",
+            "type": "string"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "name": "onSelection",
+        "type": "function",
+        "parameters": [
+          {
+            "name": "tabId",
+            "type": "integer"
+          },
+          {
+            "name": "selection",
+            "choices": [
+              {
+                "$ref": "Selection"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

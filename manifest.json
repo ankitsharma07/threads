@@ -1,0 +1,61 @@
+{
+  "manifest_version": 2,
+  "name": "Threads",
+  "version": "0.6.0",
+  "description": "Fast conversations directly in Thunderbird’s existing message pane.",
+  "author": "Ankit Kumar",
+  "homepage_url": "https://github.com/ankitsharma07/threads",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "threads@nezubn.com",
+      "strict_min_version": "147.0",
+      "strict_max_version": "158.*",
+      "update_url": "https://raw.githubusercontent.com/ankitsharma07/threads/main/updates.json"
+    }
+  },
+  "permissions": [
+    "messagesRead",
+    "accountsRead",
+    "compose",
+    "storage",
+    "clipboardWrite",
+    "addressBooks",
+    "mailTabs",
+    "messagesUpdate",
+    "messagesMove",
+    "messagesDelete",
+    "downloads"
+  ],
+  "background": {
+    "page": "src/background.html"
+  },
+  "browser_action": {
+    "default_title": "Threads",
+    "default_label": "Threads",
+    "default_icon": "src/icon.svg"
+  },
+  "content_security_policy": "script-src 'self'; object-src 'none'; connect-src 'none'",
+  "icons": {
+    "64": "src/icon.svg"
+  },
+  "experiment_apis": {
+    "threadsPane": {
+      "schema": "experiment/schema.json",
+      "parent": {
+        "scopes": [
+          "addon_parent"
+        ],
+        "paths": [
+          [
+            "threadsPane"
+          ]
+        ],
+        "script": "experiment/api.js"
+      }
+    }
+  },
+  "options_ui": {
+    "page": "src/options.html",
+    "open_in_tab": true
+  }
+}

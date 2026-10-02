@@ -1,0 +1,20 @@
+{
+  "addons": {
+    "threads@nezubn.com": {
+      "updates": [
+        {
+          "version": "0.6.0",
+          "update_link": "https://github.com/ankitsharma07/threads/releases/download/v0.6.0/threads-0.6.0.xpi",
+          "update_hash": "sha256:18bc31ce59a219c425af869a165c78971ffccf05f5b772990a6e01d4861da358",
+          "update_info_url": "https://github.com/ankitsharma07/threads/releases/tag/v0.6.0",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "147.0",
+              "strict_max_version": "158.*"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
