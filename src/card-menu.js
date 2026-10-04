@@ -19,7 +19,8 @@ export function createCardMenu({document,window}){
     // Align the menu's right edge with the button, flipping above it when there is no room below.
     const rect=target.getBoundingClientRect(),box=menu.getBoundingClientRect(),width=box.width || 240,height=box.height || 320;
     menu.style.left=`${Math.max(8,Math.min(rect.right-width,window.innerWidth-width-8))}px`;
-    menu.style.top=`${rect.bottom+4+height>window.innerHeight-8?Math.max(8,rect.top-height-4):rect.bottom+4}px`;
+    const above=rect.bottom+4+height>window.innerHeight-8;menu.classList.toggle('above',above);
+    menu.style.top=`${above?Math.max(8,rect.top-height-4):rect.bottom+4}px`;
   }
   // Updates labels in place (for example once read/starred state arrives) without moving focus.
   function update(target,items){if(anchor===target && !menu.hidden){const index=[...menu.children].indexOf(document.activeElement);render(items);if(index>=0)menu.children[index]?.focus();}}

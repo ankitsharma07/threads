@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- **Read state.** Opening a conversation in Threads marks its unread messages as read, following Thunderbird's "Automatically mark messages as read" setting and its optional delay.
+- **Smoother motion.** Cards glide when you expand or collapse a message, bodies fade in instead of popping in, unfolded messages cascade in, and menus, popovers and the loading pill animate in and out. All of it is turned off when your system asks for reduced motion.
+
 ## 0.6.0
 
 First public release.

@@ -31,7 +31,15 @@ var threadsPane = class extends ExtensionCommon.ExtensionAPI {
             const type=header.folder?.server?.type;
             const excluded=Ci.nsMsgFolderFlags.Drafts | Ci.nsMsgFolderFlags.Templates;
             return type!=='rss' && type!=='nntp' && !(header.folder.flags & excluded);
-          },onSelection:emit,reportError:error=>console.error('Threads pane:',error)});
+          },onSelection:emit,reportError:error=>console.error('Threads pane:',error),
+          readPolicy:()=>({
+            auto:Services.prefs.getBoolPref('mailnews.mark_message_read.auto',true),
+            delay:Services.prefs.getBoolPref('mailnews.mark_message_read.delay',false)?Services.prefs.getIntPref('mailnews.mark_message_read.delay.interval',5)*1000:0,
+          }),
+          markRead:headers=>{
+            const byFolder=new Map();for(const h of headers){if(!byFolder.has(h.folder))byFolder.set(h.folder,[]);byFolder.get(h.folder).push(h);}
+            for(const [folder,list] of byFolder)folder.markMessagesRead(list,true);
+          }});
         controller.loadParameters={triggeringPrincipal:context.extension.principal};
         controller.attach();this.controllers.set(tabId,controller);controller.replay();
         return controller;

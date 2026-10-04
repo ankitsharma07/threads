@@ -1,7 +1,7 @@
 /* Native-pane adapter. Kept independent of privileged API setup for testing. */
 var ThreadsPaneController = class {
-  constructor({window, tabId, pageUrl, convertMessage, isMailHeader, onSelection, reportError}) {
-    Object.assign(this,{window,tabId,pageUrl,convertMessage,isMailHeader,onSelection,reportError});
+  constructor({window, tabId, pageUrl, convertMessage, isMailHeader, onSelection, reportError, readPolicy, markRead}) {
+    Object.assign(this,{window,tabId,pageUrl,convertMessage,isMailHeader,onSelection,reportError,readPolicy,markRead});
     this.pane=window.messagePane || window.document.getElementById('messagePane');
     this.enabled=true;this.detached=false;this.revision=0;this.current=null;this.bypassKey=null;
   }
@@ -33,7 +33,22 @@ var ThreadsPaneController = class {
     const members=[];for(let i=0;i<thread.numChildren;i++)members.push(thread.getChildHdrAt(i));
     return members.length ? members : headers;
   }
-  clearSelection(){this.revision++;this.current=null;this.onSelection(this.tabId,null);}
+  clearSelection(){this.revision++;this.cancelRead();this.current=null;this.onSelection(this.tabId,null);}
+  // Thunderbird marks a message read when about:message loads it; Threads replaces that load, so it
+  // applies the same mailnews.mark_message_read preferences to the whole conversation it shows.
+  cancelRead(){if(this.readTimer){this.window.clearTimeout(this.readTimer);this.readTimer=null;}}
+  scheduleRead(members,revision){
+    this.cancelRead();
+    let policy;try{policy=this.readPolicy?.();}catch(error){this.reportError(error);return;}
+    if(!policy?.auto || !this.markRead)return;
+    const run=()=>{
+      this.readTimer=null;
+      if(this.detached || revision!==this.revision)return;
+      const unread=members.filter(h=>!h.isRead);
+      if(unread.length)try{this.markRead(unread);}catch(error){this.reportError(error);}
+    };
+    if(policy.delay>0)this.readTimer=this.window.setTimeout(run,policy.delay);else run();
+  }
   route(headers,fallback) {
     const selected=headers[0];
     if(!this.enabled || !selected || this.pane.classList.contains('collapsed-by-splitter')){this.clearSelection();return fallback();}
@@ -42,7 +57,7 @@ var ThreadsPaneController = class {
     try {
       const members=this.nativeThread(headers);
       if(!members){this.clearSelection();return fallback();}
-      const revision=++this.revision;
+      const revision=++this.revision;this.cancelRead();
       const promise=Promise.all(members.map(h=>this.convertMessage(h))).then(async messages=>({
         selected:await this.convertMessage(selected),messages,
       }));
@@ -54,7 +69,7 @@ var ThreadsPaneController = class {
         browser.docShellIsActive=this.window.tabOrWindow?.selected!==false;
       }
       this.pane.dispatchEvent(new this.window.CustomEvent('request-count-update',{bubbles:true}));
-      promise.then(snapshot=>{if(!this.detached && revision===this.revision)this.onSelection(this.tabId,snapshot);})
+      promise.then(snapshot=>{if(!this.detached && revision===this.revision){this.onSelection(this.tabId,snapshot);this.scheduleRead(members,revision);}})
         .catch(error=>{if(!this.detached && revision===this.revision){this.reportError(error);this.clearSelection();fallback();}});
     }catch(error){this.reportError(error);this.clearSelection();return fallback();}
   }
@@ -67,7 +82,7 @@ var ThreadsPaneController = class {
     return this.originalSingle.call(this.pane,selected.folder.getUriForMsg(selected));
   }
   detach({restore=true}={}) {
-    if(this.detached)return;this.detached=true;this.revision++;
+    if(this.detached)return;this.detached=true;this.revision++;this.cancelRead();
     if(this.pane.displayMessage===this.single)this.pane.displayMessage=this.originalSingle;
     if(this.pane.displayMessages===this.multiple)this.pane.displayMessages=this.originalMultiple;
     if(restore && !this.window.closed && this.pane.webBrowser?.currentURI?.spec===this.pageUrl){this.pane.clearWebPage();this.replay();}

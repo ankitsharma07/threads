@@ -16,7 +16,7 @@ function fixture(){
     clearWebPage(){calls.clear++;this.webBrowser.hidden=true;this.webBrowser.currentURI.spec='about:blank';},dispatchEvent(){calls.counts++;}
   };
   const originalSingle=pane.displayMessage,originalMultiple=pane.displayMessages;
-  const window={messagePane:pane,CustomEvent:class {constructor(type,options){this.type=type;this.options=options;}},tabOrWindow:{selected:true},gDBView:{getSelectedMsgHdrs:()=>selected,getThreadContainingMsgHdr:h=>h.thread||thread}};
+  const window={setTimeout:(fn,ms)=>setTimeout(fn,ms),clearTimeout:id=>clearTimeout(id),messagePane:pane,CustomEvent:class {constructor(type,options){this.type=type;this.options=options;}},tabOrWindow:{selected:true},gDBView:{getSelectedMsgHdrs:()=>selected,getThreadContainingMsgHdr:h=>h.thread||thread}};
   window.threadPane={_onSelect:()=>selected.length===1?pane.displayMessage(folder.getUriForMsg(selected[0])):pane.displayMessages(selected)};
   const controller=new Controller({window,tabId:7,pageUrl:'moz-extension://threads/src/reader.html?tabId=7',convertMessage:async h=>({id:h.messageKey,headerMessageId:h.headerMessageId}),isMailHeader:h=>h.folder.server.type!=='rss',onSelection:(id,value)=>calls.selections.push({id,value}),reportError:e=>calls.errors.push(e)});
   controller.attach();
@@ -37,3 +37,9 @@ test('Shutdown does not overwrite methods subsequently wrapped by another add-on
 test('API conversion failure returns to the original reader',async()=>{const f=fixture();f.controller.convertMessage=async()=>{throw new Error('API unavailable');};f.window.threadPane._onSelect();await settle();assert.equal(f.calls.errors.length,1);assert.equal(f.calls.single.length,1);});
 test('Explicit display requests for an unselected message keep native behavior',()=>{const f=fixture();assert.equal(f.pane.displayMessage('imap-message://account/inbox#99'),'native-single');assert.equal(f.calls.pages.length,0);});
 test('Closing a native tab detaches without reloading a closing window',async()=>{const f=fixture();f.window.threadPane._onSelect();await settle();f.controller.detach({restore:false});assert.equal(f.pane.displayMessage,f.originalSingle);assert.equal(f.calls.clear,0);assert.equal(f.calls.single.length,0);});
+function reading(f,policy){const marked=[];f.controller.readPolicy=()=>policy;f.controller.markRead=h=>marked.push(...h);return marked;}
+test('Showing a conversation marks its unread messages read',async()=>{const f=fixture();f.headers[1].isRead=true;const marked=reading(f,{auto:true,delay:0});f.window.threadPane._onSelect();await settle();assert.deepEqual(marked.map(h=>h.messageKey),[1,3]);});
+test('Automatic marking follows Thunderbird preferences',async()=>{const f=fixture();const marked=reading(f,{auto:false,delay:0});f.window.threadPane._onSelect();await settle();assert.equal(marked.length,0);});
+test('Delayed marking is cancelled when the selection moves on',async()=>{const f=fixture();const marked=reading(f,{auto:true,delay:20});f.window.threadPane._onSelect();await settle();f.collapse(true);f.window.threadPane._onSelect();await new Promise(r=>setTimeout(r,40));assert.equal(marked.length,0);
+  f.collapse(false);f.window.threadPane._onSelect();await settle();assert.equal(marked.length,0);await new Promise(r=>setTimeout(r,40));assert.equal(marked.length,3);});
+test('Detaching cancels a pending read mark',async()=>{const f=fixture();const marked=reading(f,{auto:true,delay:20});f.window.threadPane._onSelect();await settle();f.controller.detach({restore:false});await new Promise(r=>setTimeout(r,40));assert.equal(marked.length,0);});
