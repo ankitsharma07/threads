@@ -3,22 +3,22 @@ import {PARSER_VERSION} from './core.js';
 // Formatting travels through the line-based quote/signature detection as private-use sentinels.
 // They are stripped from every input (including decoded entities), so mail content can never forge one.
 const B=['\uE000','\uE001'],I=['\uE002','\uE003'],U=['\uE004','\uE005'],C=['\uE006','\uE007'];
-const LINK_OPEN='\uE008',LINK_MID='\uE009',LINK_CLOSE='\uE00A',ITEM='\uE010',ITEM_END='\uE011',LIST_END='\uE012',BLOCK='\uE013',QUOTE='\uE014',QUOTE_START='\uE015';
-const RESERVED=/[\uE000-\uE015]/g,SENTINELS=/\uE008\d*\uE009|\uE010\d+\|[^\uE011]*\uE011|[\uE012\uE014]\d*[\uE012\uE014]|[\uE000-\uE015]/g;
+const LINK_OPEN='\uE008',LINK_MID='\uE009',LINK_CLOSE='\uE00A',ITEM='\uE010',ITEM_END='\uE011',LIST_END='\uE012',BLOCK='\uE013',QUOTE='\uE014',QUOTE_START='\uE015',PARA='\uE016';
+const RESERVED=/[\uE000-\uE016]/g,SENTINELS=/\uE008\d*\uE009|\uE010\d+\|[^\uE011]*\uE011|[\uE012\uE014]\d*[\uE012\uE014]|[\uE000-\uE016]/g;
 const plain=value=>value.replace(SENTINELS,'');
 const BULLETS=['•','◦','▪'];
 function decode(text) {
   return text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(_,x)=>{
     const known={amp:'&',lt:'<',gt:'>',quot:'"',apos:"'",nbsp:'\u00a0'};
     if(x[0]!=='#')return known[x.toLowerCase()];const n=x[1].toLowerCase()==='x'?parseInt(x.slice(2),16):parseInt(x.slice(1),10);
-    return n>0 && n<=0x10ffff && !(n>=0xE000 && n<=0xE015)?String.fromCodePoint(n):'�';
+    return n>0 && n<=0x10ffff && !(n>=0xE000 && n<=0xE016)?String.fromCodePoint(n):'�';
   });
 }
 const inert=html=>html.replace(RESERVED,'').replace(/<(script|style|head|iframe|object)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,'').replace(/<!--[\s\S]*?-->/g,'');
 // Converts HTML to text plus sentinels. Tags are walked in order so lists know their depth and numbering,
 // and closing tags know which marks they end. No markup survives; the reader builds its own elements.
 function markup(html,links=[]) {
-  const lists=[],spans=[],anchors=[];let quoteDepth=0;
+  const lists=[],spans=[],anchors=[],paragraphs=[];let quoteDepth=0;
   return decode(inert(html).replace(/<[!?][^>]*>/g,'')
     // Source line breaks inside HTML are not visible line breaks; only tags are.
     .replace(/\s+/g,' ')
@@ -54,14 +54,21 @@ function markup(html,links=[]) {
         links.push(href);return `${LINK_OPEN}${links.length-1}${LINK_MID}`;
       }
       if(name==='br')return '\n';
+      // Paragraph margins read as a blank line. Outlook zeroes them (MsoNormal) and spaces with empty paragraphs,
+      // and a paragraph inside a list item stays part of that item.
+      if(name==='p'){
+        if(close)return paragraphs.pop() || BLOCK;
+        paragraphs.push(lists.length || /\bclass\s*=\s*["']?MsoNormal|margin(?:-top|-bottom)?\s*:\s*0(?![.\d])/i.test(attributes)?BLOCK:PARA);return paragraphs.at(-1);
+      }
       // Block elements break the line where they start and where they end, like a browser lays them out.
       if(/^(?:p|div|tr|table|tbody|thead|tfoot|dl|dd|dt|address|section|article|header|footer|main|nav|aside|center|figure|figcaption|form|fieldset|hr)$/.test(name))return BLOCK;
       if(close && (name==='td' || name==='th'))return ' ';
       return '';
     }))
-    // Adjacent block edges make one break, and a <br> ending a block does not add another;
-    // an empty block holding only <br> still leaves its blank line.
-    .replace(/[ \t]*\uE013(?:[ \t]*\uE013)*[ \t]*/g,BLOCK).replace(/\n\uE013/g,'\n').replace(/\uE013/g,'\n')
+    // Adjacent block edges make one break, a paragraph edge among them a blank line (margins collapse),
+    // and a <br> ending a block does not add another; an empty block holding only <br> still leaves its blank line.
+    .replace(/[ \t]*[\uE013\uE016](?:[ \t]*[\uE013\uE016])*[ \t]*/g,edges=>edges.includes(PARA)?PARA:BLOCK)
+    .replace(/\n\uE013/g,'\n').replace(/\uE013/g,'\n').replace(/\n?\uE016/g,'\n\n')
     .replace(/\r/g,'').replace(/[ \t ]+\n/g,'\n').replace(/\n[ \t ]+/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
 }
 export function htmlText(html) {

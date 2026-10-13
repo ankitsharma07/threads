@@ -147,8 +147,6 @@ details[open]>summary .when-closed,details:not([open])>summary .when-open{displa
 .body,.extra-body,.reading-preview{font-family:var(--reading-font);font-size:var(--reading-size);line-height:var(--reading-leading);overflow-wrap:break-word;min-width:0;font-kerning:normal;text-rendering:optimizeLegibility}
 .body:focus-visible{outline-offset:6px;border-radius:2px}
 .text-block{white-space:pre-wrap}
-/* Very wide panes keep a comfortable line length for prose. */
-.text-block,.list-block{max-width:78ch}
 .body strong,.extra-body strong,.reading-preview strong{font-weight:650}
 :is(.body,.extra-body) :not(pre)>code{font:.9em var(--mono);padding:.1em .35em;border-radius:4px;background:color-mix(in srgb,var(--bg) 75%,var(--card));border:1px solid var(--line)}
 .list-block{list-style:none;margin:.5em 0;padding:0}
@@ -197,7 +195,7 @@ details[open]>summary .when-closed,details:not([open])>summary .when-open{displa
 .quote-level>:first-child{margin-top:0}
 .quote-level>:last-child{margin-bottom:0}
 .quote-attribution{margin:1.1em 0 .45em;font-size:.88em;font-weight:500;color:var(--muted)}
-.quote-headers{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;max-width:78ch;margin:1.1em 0 .7em;padding:8px 12px;font-size:.86em;line-height:1.5;border-radius:8px;background:color-mix(in srgb,var(--bg) 55%,var(--card))}
+.quote-headers{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 12px;margin:1.1em 0 .7em;padding:8px 12px;font-size:.86em;line-height:1.5;border-radius:8px;background:color-mix(in srgb,var(--bg) 55%,var(--card))}
 .quote-headers dt{color:var(--muted);font-weight:500}
 .quote-headers dd{margin:0;min-width:0;overflow-wrap:anywhere}
 

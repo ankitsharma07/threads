@@ -17,7 +17,7 @@ test('LRU access protects hot entries and byte capacity is enforced',()=>{const 
 test('plain text reply markers collapse history without dropping original',()=>{const parsed=parseBody({messageId:'a',size:42,text:'Looks good.\n\nOn Tue Ada wrote:\n> previous'});assert.equal(parsed.text,'Looks good.');assert.match(parsed.quote,/previous/);});
 test('signature remains independently expandable',()=>{const parsed=parseBody({messageId:'a',text:'Hello\n-- \nAda\nOn Tue Bob wrote:\nOld'});assert.equal(parsed.text,'Hello');assert.match(parsed.signature,/Ada/);assert.match(parsed.quote,/Old/);});
 test('HTML quote containers become collapsible text',()=>{const b=parseBody({messageId:'a',html:'<div>Hello &amp; goodbye</div><div class="gmail_quote">Prior reply</div>'});assert.equal(b.text,'Hello & goodbye');assert.match(b.quote,/Prior reply/);});
-test('HTML converts to inert text with no executable markup',()=>{const text=htmlText('<script>alert(1)</script><style>p{}</style><p onclick="evil()">Safe</p><img src="https://tracker.test/x"><iframe>Bad</iframe>&lt;script&gt;');assert.equal(text,'Safe\n<script>');});
+test('HTML converts to inert text with no executable markup',()=>{const text=htmlText('<script>alert(1)</script><style>p{}</style><p onclick="evil()">Safe</p><img src="https://tracker.test/x"><iframe>Bad</iframe>&lt;script&gt;');assert.equal(text,'Safe\n\n<script>');});
 test('malformed numeric entities cannot crash parser',()=>assert.equal(htmlText('&#999999999; &#x1F600;'),'� 😀'));
 test('MIME alternatives keep HTML formatting with plain text alongside and exclude attachments',()=>{const p={contentType:'multipart/mixed',parts:[{name:'readme.txt',contentType:'text/plain',body:'Attachment'},{contentType:'multipart/alternative',parts:[{contentType:'text/html',body:'<p>Hello</p>'},{contentType:'text/plain',body:'Hello'}]},{contentType:'message/rfc822',parts:[{contentType:'text/plain',body:'Forward'}]}]};assert.deepEqual(chooseBody(p),{html:'<p>Hello</p>',text:'Hello'});});
 test('HTML-only message is readable',()=>assert.deepEqual(chooseBody({contentType:'text/html',body:'<p>Hello</p>'}),{html:'<p>Hello</p>'}));
@@ -79,7 +79,7 @@ test('HTML lists keep nesting, numbering and emphasis',()=>{
 });
 test('HTML source line breaks collapse; tags decide visible breaks',()=>{
   const body=parseBody({html:'<p>One sentence\n   wrapped in source</p><div>Line<br>break</div><span style="font-weight:700">Docs bold</span>'});
-  assert.equal(body.text,'One sentence wrapped in source\nLine\nbreak\nDocs bold');assert.ok(body.blocks[0].runs.some(r=>r.text==='Docs bold' && r.b));
+  assert.equal(body.text,'One sentence wrapped in source\n\nLine\nbreak\nDocs bold');assert.ok(body.blocks[0].runs.some(r=>r.text==='Docs bold' && r.b));
 });
 test('Plain-text bullets nest by indentation and *emphasis* becomes bold',()=>{
   const body=parseBody({text:'Notes:\n- one *important* item\n   - nested\n     wrapped line\n- two\n1. numbered\n\nAfter 2 * 3 * 4'});
@@ -110,9 +110,14 @@ test('HTML line breaks follow browser block layout',()=>{
     '<p class=MsoNormal>Hi<o:p></o:p></p><p class=MsoNormal><o:p>&nbsp;</o:p></p><p class=MsoNormal>Body</p>':'Hi\n\nBody',
     '<div><div><div>x</div></div></div><div>y</div>':'x\ny',
     '<table><tr><td>A</td><td>B</td></tr><tr><td>C</td></tr></table>after':'A B\nC\nafter',
-    'intro<h2>Title</h2>para':'intro\nTitle\npara'
+    'intro<h2>Title</h2>para':'intro\nTitle\npara',
+    // Paragraph margins collapse into one blank line; a trailing <br> or whitespace adds nothing.
+    '<p>One\n  wrapped</p>\n  <p>Two <br>\n</p><p><br>\n  Sign-off</p>':'One wrapped\n\nTwo\n\nSign-off',
+    '<p style="margin:0">a</p><p style="margin:0">b</p>':'a\nb'
   };
   for(const [html,expected] of Object.entries(cases))assert.equal(htmlText(html),expected,html);
+  // A paragraph inside a list item stays part of that item.
+  assert.deepEqual(parseBody({html:'<ul><li><p>item</p></li><li>next</li></ul>'}).blocks[0].items.map(i=>i.text),['item','next']);
 });
 
 test('Quoted history keeps nesting, attributions and forwarded headers as structure',()=>{

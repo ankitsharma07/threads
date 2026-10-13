@@ -45,14 +45,21 @@ const MESSAGE_ACTIONS={
   saveAs:async({id,header})=>await saveFile(await messenger.messages.getRaw(id,{data_format:'File'}),`${header.subject || 'message'}.eml`)?'Message saved':'Save cancelled'
 };
 const scheduler=new Scheduler(async id=>{
-  let m=await db.getMessage(id);const h=knownHeaders.get(id);if(!m || (h && m.size!==(h.size || 0))){m=h?await index(h).catch(()=>queryId(id)):await queryId(id);}
-  const valid=b=>!m.deleted && b && b.parserVersion===PARSER_VERSION && b.size===m.size;
-  let b=memory.get(id);if(valid(b))return b;b=await db.getBody(id);if(valid(b)){memory.set(id,b);db.putBody(b).catch(()=>{});return b;}
+  // On IMAP every header read streams the message from the server, so a known native header is enough to
+  // check caches and fetch the body; an unindexed message takes its metadata from getFull's headers.
+  let m=await db.getMessage(id);const h=knownHeaders.get(id);if(!m && !h)m=await queryId(id);
+  const size=h?h.size || 0:m.size,stale=!m || m.size!==size;
+  const valid=b=>!m?.deleted && b && b.parserVersion===PARSER_VERSION && b.size===size;
+  let b=memory.get(id);if(valid(b)){if(stale)index(h).catch(()=>{});return b;}
+  b=await db.getBody(id);if(valid(b)){if(stale)index(h).catch(()=>{});memory.set(id,b);db.putBody(b).catch(()=>{});return b;}
   messenger.runtime.sendMessage({type:'bodyStage',id,stage:'fetching'}).catch(()=>{});
   let full;try{full=await withTimeout(messenger.messages.getFull(await resolve(id)),30000);}catch(error){if(error.code==='TIMEOUT')throw error;full=await withTimeout(messenger.messages.getFull(await resolve(id,true)),30000);m=await db.getMessage(id);}
+  if(!m || m.size!==size){m=await metadataJobs.get(h.id)?.catch(()=>null);if(!m){m=metadata(h,full.headers || {},session);await db.putMessage(m);}}
   messenger.runtime.sendMessage({type:'bodyStage',id,stage:'parsing'}).catch(()=>{});
   b=await parse({messageId:id,size:m.size,...chooseBody(full),attachments:listAttachments(full)});await db.putBody(b);memory.set(id,b);return b;
 },3);
+// Indexing reads headers over the same few IMAP connections as bodies, so it waits while bodies load.
+async function bodiesIdle(){while(scheduler.active || scheduler.queue.length)await new Promise(r=>setTimeout(r,100));}
 let indexing=false,status={phase:'Starting',indexed:0,error:null}, indexingEnabled=true;
 function rememberSelection(tabId,selection){
   if(!selection){selections.delete(tabId);nativeThreads.delete(tabId);viewports.delete(tabId);retainViewports();return;}
@@ -174,11 +181,11 @@ const yieldUI=()=>new Promise(r=>setTimeout(r,15));
 async function scan(){if(indexing)return;indexing=true;status.error=null;
   try{for(const days of [30,180,null]){if(!indexingEnabled)break;const key=`complete:${days}`;if(await db.getState(key))continue;status.phase=days?`Indexing last ${days} days`:'Indexing older mail';let page;
     try{page=await messenger.messages.query({...(days?{fromDate:new Date(Date.now()-days*86400000)}:{}),messagesPerPage:100,autoPaginationTimeout:100});
-      while(true){for(let i=0;i<page.messages.length;i+=4){if(!indexingEnabled)break;await Promise.all(page.messages.slice(i,i+4).map(async h=>{const existing=await db.getMessage(identity(h,session));handles.set(identity(h,session),h.id);if(!existing?.rootId || existing.size!==(h.size||0)){await index(h);status.indexed++;}}));await yieldUI();}
+      while(true){for(let i=0;i<page.messages.length;i+=4){if(!indexingEnabled)break;await bodiesIdle();await Promise.all(page.messages.slice(i,i+4).map(async h=>{const existing=await db.getMessage(identity(h,session));handles.set(identity(h,session),h.id);if(!existing?.rootId || existing.size!==(h.size||0)){await index(h);status.indexed++;}}));await yieldUI();}
         await notifyIndex();if(!indexingEnabled || !page.id)break;page=await messenger.messages.continueList(page.id);}
       if(indexingEnabled)await db.setState(key,true);
     }finally{if(page?.id)await messenger.messages.abortList(page.id).catch(()=>{});}}
-    if(indexingEnabled){const recent=await messenger.messages.query({fromDate:new Date(Date.now()-2*86400000),messagesPerPage:100,autoPaginationTimeout:100});await eachMessage(recent,async h=>{const previous=await db.getMessage(identity(h,session));if(!previous?.rootId || previous.size!==(h.size||0)){await index(h);status.indexed++;}await yieldUI();});await notifyIndex();}
+    if(indexingEnabled){const recent=await messenger.messages.query({fromDate:new Date(Date.now()-2*86400000),messagesPerPage:100,autoPaginationTimeout:100});await eachMessage(recent,async h=>{await bodiesIdle();const previous=await db.getMessage(identity(h,session));if(!previous?.rootId || previous.size!==(h.size||0)){await index(h);status.indexed++;}await yieldUI();});await notifyIndex();}
     status.phase=indexingEnabled?'Index ready':'Indexing paused';await db.pruneBodies();
   }catch(e){status.phase='Indexing interrupted';status.error=e.message;}finally{indexing=false;}}
 async function eachMessage(list,callback){let page=list;try{while(page){for(const h of page.messages)await callback(h);if(!page.id)break;page=await messenger.messages.continueList(page.id);}}finally{if(page?.id)await messenger.messages.abortList(page.id).catch(()=>{});}}

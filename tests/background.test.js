@@ -51,6 +51,11 @@ test('Background keeps metadata and body retrieval separate',async t=>{
   await t.test('Native mail tabs maintain independent selections',async()=>{const second=await runtimeListener({type:'thread',tabId:2});const first=await runtimeListener({type:'thread',tabId:1});assert.equal(second.selected,'mail99@test');assert.equal(first.selected,'mail399@test');});
   await t.test('Toolbar shows the native pane without opening a tab',async()=>{await messenger.browserAction.onClicked.listeners.at(-1)({id:1});assert.equal(toggles,1);assert.equal(createdTabs,0);});
   await t.test('The current native thread provides a skeleton before indexing',async()=>{const fresh=Array.from({length:5},(_,i)=>({...headers[0],id:1001+i,headerMessageId:`fresh${i}@test`,date:new Date(i)}));nativeSelections.set(3,{selected:fresh[0],messages:fresh});const result=await runtimeListener({type:'thread',tabId:3});assert.equal(result.messages.length,5);assert.equal(result.selected,'fresh0@test');assert.equal(count.full,21);});
+  await t.test('An unindexed body takes its metadata from getFull without a separate header read',async()=>{
+    const getHeaders=messenger.messages.getHeaders,read=[];messenger.messages.getHeaders=id=>{read.push(id);return getHeaders(id);};
+    try{const [result]=await runtimeListener({type:'bodies',ids:['fresh3@test'],selected:'fresh3@test'});assert.ok(result.body);assert.ok(!read.includes(1004));}
+    finally{messenger.messages.getHeaders=getHeaders;}
+  });
   await t.test('Reply, reply all and forward use the intended native compose types without loading bodies',async()=>{
     const before=count.full;
     for(const action of ['reply','replyAll','forward'])await runtimeListener({type:'compose',messageId:'mail399@test',action});

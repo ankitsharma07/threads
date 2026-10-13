@@ -349,7 +349,9 @@ function render(scrollTo){
   const missing=visible.filter(m=>!bodyFor(m.messageId)&&!errors.has(m.messageId)&&!inflight.has(m.messageId));
   if(missing.length){const ids=missing.map(m=>m.messageId).sort((a,b)=>(a===selected?-1:b===selected?1:0)),token=++requestSeq,owned=id=>inflight.get(id)===token;ids.forEach(id=>inflight.set(id,token));
     updateProgress();withTimeout(send({type:'bodies',ids,selected}),45000).then(results=>{for(const r of results){if(r.body)receiveBody(r.id,r.body);else if(owned(r.id) && r.error!=='Body request superseded')errors.set(r.id,r.error);}})
-      .catch(e=>{for(const id of ids)if(owned(id) && !bodyFor(id))errors.set(id,e.message);}).finally(()=>{ids.forEach(id=>{if(owned(id))inflight.delete(id);});render();});}
+      // A batch outlasting the timeout is usually bodies still queued behind slow IMAP reads. The background reports
+      // each one as it settles, so a timeout only releases them to be re-requested; the scheduler deduplicates.
+      .catch(e=>{if(e.code!=='TIMEOUT')for(const id of ids)if(owned(id) && !bodyFor(id))errors.set(id,e.message);}).finally(()=>{ids.forEach(id=>{if(owned(id))inflight.delete(id);});render();});}
   updateProgress();
 }
 function scrollToMessage(id){

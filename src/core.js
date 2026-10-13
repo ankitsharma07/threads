@@ -1,4 +1,4 @@
-export const PARSER_VERSION = 7;
+export const PARSER_VERSION = 8;
 export function ids(value) {
   const text = Array.isArray(value) ? value.join(' ') : String(value || '');
   const matches = text.match(/<[^<>\s]+>/g);
