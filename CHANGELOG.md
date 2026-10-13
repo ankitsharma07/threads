@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.2
+
+- **Paragraphs.** Paragraphs in HTML mail keep the blank line between them instead of running together. Outlook mail stays single-spaced, as Outlook shows it.
+- **Full width.** Message text fills the reading pane instead of wrapping at a fixed width.
+- **Faster loading on IMAP.** Opening a message that isn't indexed yet reads it from the server once instead of twice, and background indexing pauses while messages are loading. Messages still waiting in line keep loading instead of showing **Retry**.
+
 ## 0.6.1
 
 - **Read state.** Opening a conversation in Threads marks its unread messages as read, following Thunderbird's "Automatically mark messages as read" setting and its optional delay.

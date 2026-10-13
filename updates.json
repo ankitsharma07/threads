@@ -25,6 +25,18 @@
               "strict_max_version": "158.*"
             }
           }
+        },
+        {
+          "version": "0.6.2",
+          "update_link": "https://github.com/ankitsharma07/threads/releases/download/v0.6.2/threads-0.6.2.xpi",
+          "update_hash": "sha256:b0d23dfb01d5a583e13378a104961ca62b1ce171aa833eb4535fe6eae3c96523",
+          "update_info_url": "https://github.com/ankitsharma07/threads/releases/tag/v0.6.2",
+          "applications": {
+            "gecko": {
+              "strict_min_version": "147.0",
+              "strict_max_version": "158.*"
+            }
+          }
         }
       ]
     }
