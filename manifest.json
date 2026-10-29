@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Threads",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Fast conversations directly in Thunderbird’s existing message pane.",
   "author": "Ankit Kumar",
   "homepage_url": "https://github.com/ankitsharma07/threads",
@@ -9,7 +9,7 @@
     "gecko": {
       "id": "threads@nezubn.com",
       "strict_min_version": "147.0",
-      "strict_max_version": "158.*",
+      "strict_max_version": "159.*",
       "update_url": "https://raw.githubusercontent.com/ankitsharma07/threads/main/updates.json"
     }
   },

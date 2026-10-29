@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.3
+
+- **Thunderbird 159.** Threads now installs and runs on Thunderbird 159.
+
 ## 0.6.2
 
 - **Paragraphs.** Paragraphs in HTML mail keep the blank line between them instead of running together. Outlook mail stays single-spaced, as Outlook shows it.

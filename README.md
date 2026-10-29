@@ -87,7 +87,7 @@ How it works internally (indexing, the virtual list, the parser and caches) is i
 
 ### Releasing
 
-1. Set the new version in `manifest.json` and `package.json`, and add a `## <version>` section to [CHANGELOG.md](CHANGELOG.md). Threads uses an Experiment API, so `strict_max_version` must name the newest Thunderbird it has been tested with; raise it (for example to `159.*`) after checking each new Thunderbird release.
+1. Set the new version in `manifest.json` and `package.json`, and add a `## <version>` section to [CHANGELOG.md](CHANGELOG.md). Threads uses an Experiment API, so `strict_max_version` must name the newest Thunderbird it has been tested with; raise it (for example to `160.*`) after checking each new Thunderbird release.
 2. Run `python3 release.py`. It builds the XPI, adds it with its SHA-256 hash to `updates.json`, writes release notes to `dist/`, and prints the remaining commands.
 3. Push the tag, create the GitHub release with the built XPI attached, then push `main`. Installed copies update once `updates.json` on `main` lists the new version.
 4. For addons.thunderbird.net, upload `dist/threads-<version>-atn.xpi`. It is identical except that it leaves out the GitHub `update_url`, because ATN delivers updates to its own installs.
